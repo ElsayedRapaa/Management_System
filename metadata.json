@@ -1,0 +1,6 @@
+{
+  "name": "نظام إدارة المخازن والفواتير",
+  "description": "نظام متكامل وراقي لإدارة المخزن، المنتجات، العملاء، والفواتير باللغة العربية.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
