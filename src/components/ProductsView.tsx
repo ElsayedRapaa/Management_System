@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { Product } from '../types';
 import { formatCurrency, generateCode } from '../lib/formatters';
 import {
@@ -17,8 +18,20 @@ import {
   MinusCircle
 } from 'lucide-react';
 
+const checkExpiryStatus = (dateStr: string): { isExpired: boolean; isExpiringSoon: boolean } => {
+  if (!dateStr || dateStr.trim() === '') return { isExpired: false, isExpiringSoon: false };
+  const targetDate = new Date(dateStr).getTime();
+  if (isNaN(targetDate)) return { isExpired: false, isExpiringSoon: false };
+  const now = Date.now();
+  const diffDays = (targetDate - now) / (1000 * 60 * 60 * 24);
+  const isExpired = diffDays < 0;
+  const isExpiringSoon = !isExpired && diffDays <= 30;
+  return { isExpired, isExpiringSoon };
+};
+
 export const ProductsView: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct, bankTotalValue } = useApp();
+  const { user } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -27,13 +40,22 @@ export const ProductsView: React.FC = () => {
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
   // Form State for Adding / Editing
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    code: string;
+    name: string;
+    purchase_price: string;
+    selling_price: string;
+    quantity: string;
+    category: string;
+    expiry_dates: string[];
+  }>({
     code: '',
     name: '',
     purchase_price: '',
     selling_price: '',
     quantity: '',
     category: 'أدوية علاجية',
+    expiry_dates: [''],
   });
 
   // Filtered Products
@@ -67,6 +89,7 @@ export const ProductsView: React.FC = () => {
       selling_price: '',
       quantity: '',
       category: 'أدوية علاجية',
+      expiry_dates: [''],
     });
     setIsAddModalOpen(true);
   };
@@ -74,6 +97,7 @@ export const ProductsView: React.FC = () => {
   // Open Edit Modal
   const handleOpenEditModal = (product: Product) => {
     setEditingProduct(product);
+    const expDates = product.expiry_dates && product.expiry_dates.length > 0 ? [...product.expiry_dates] : [''];
     setFormData({
       code: product.code,
       name: product.name,
@@ -81,6 +105,7 @@ export const ProductsView: React.FC = () => {
       selling_price: product.selling_price.toString(),
       quantity: product.quantity.toString(),
       category: product.category || 'أدوية علاجية',
+      expiry_dates: expDates,
     });
   };
 
@@ -94,6 +119,7 @@ export const ProductsView: React.FC = () => {
     const pPrice = parseFloat(formData.purchase_price);
     const sPrice = parseFloat(formData.selling_price);
     const qty = parseInt(formData.quantity, 10);
+    const cleanExpiryDates = formData.expiry_dates.filter((d) => d && d.trim() !== '');
 
     if (editingProduct) {
       await updateProduct(editingProduct.id, {
@@ -103,6 +129,7 @@ export const ProductsView: React.FC = () => {
         selling_price: sPrice,
         quantity: qty,
         category: formData.category,
+        expiry_dates: cleanExpiryDates,
       });
       setEditingProduct(null);
     } else {
@@ -113,6 +140,7 @@ export const ProductsView: React.FC = () => {
         selling_price: sPrice,
         quantity: qty,
         category: formData.category,
+        expiry_dates: cleanExpiryDates,
       });
       setIsAddModalOpen(false);
     }
@@ -194,6 +222,7 @@ export const ProductsView: React.FC = () => {
                   <th className="py-4 px-6">سعر الشراء (EGP)</th>
                   <th className="py-4 px-6">سعر البيع (EGP)</th>
                   <th className="py-4 px-6">الكمية المتاحة</th>
+                  <th className="py-4 px-6">تاريخ الصلاحية</th>
                   <th className="py-4 px-6">إجمالي القيمة بالبنك</th>
                   <th className="py-4 px-6">حالة المخزون</th>
                   <th className="py-4 px-6 text-center">الإجراءات</th>
@@ -240,6 +269,39 @@ export const ProductsView: React.FC = () => {
                           </button>
                         </div>
                       </td>
+                      <td className="py-4 px-6 font-mono">
+                        {!product.expiry_dates || product.expiry_dates.length === 0 ? (
+                          <span className="text-slate-400 font-sans text-[11px]">- غير محدد</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5 items-center max-w-[200px]">
+                            {product.expiry_dates.map((dateStr, idx) => {
+                              const { isExpired, isExpiringSoon } = checkExpiryStatus(dateStr);
+                              return (
+                                <span
+                                  key={idx}
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold border ${
+                                    isExpired
+                                      ? 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse'
+                                      : isExpiringSoon
+                                      ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                      : 'bg-slate-100 text-slate-700 border-slate-200'
+                                  }`}
+                                  title={
+                                    isExpired
+                                      ? 'منتهي الصلاحية!'
+                                      : isExpiringSoon
+                                      ? 'يوشك على الانتهاء (خلال 30 يوم)'
+                                      : 'صالح للاستخدام'
+                                  }
+                                >
+                                  {(isExpired || isExpiringSoon) && <AlertCircle className="w-3 h-3 shrink-0" />}
+                                  <span>{dateStr}</span>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </td>
                       <td className="py-4 px-6 font-mono font-extrabold text-slate-900">
                         {formatCurrency(itemBankValue)}
                       </td>
@@ -265,13 +327,15 @@ export const ProductsView: React.FC = () => {
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => setDeletingProduct(product)}
-                            title="حذف المنتج"
-                            className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {user?.role !== 'employee' && (
+                            <button
+                              onClick={() => setDeletingProduct(product)}
+                              title="حذف المنتج"
+                              className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -380,6 +444,52 @@ export const ProductsView: React.FC = () => {
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 font-mono font-bold focus:outline-none focus:border-emerald-500"
                   />
                 </div>
+              </div>
+
+              {/* Dynamic Expiry Dates Section */}
+              <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80 space-y-3">
+                <label className="block text-xs font-extrabold text-slate-800">
+                  تاريخ انتهاء الصلاحية <span className="text-[11px] font-normal text-slate-500">(تعدد التواريخ لاختلاف التشغيلات/الجرعات)</span>
+                </label>
+                <div className="space-y-2">
+                  {formData.expiry_dates.map((dateVal, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        value={dateVal}
+                        onChange={(e) => {
+                          const newDates = [...formData.expiry_dates];
+                          newDates[index] = e.target.value;
+                          setFormData({ ...formData, expiry_dates: newDates });
+                        }}
+                        className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono font-bold focus:outline-none focus:border-emerald-500 cursor-pointer"
+                      />
+                      {formData.expiry_dates.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newDates = formData.expiry_dates.filter((_, i) => i !== index);
+                            setFormData({ ...formData, expiry_dates: newDates });
+                          }}
+                          title="حذف التاريخ"
+                          className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer shrink-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData({ ...formData, expiry_dates: [...formData.expiry_dates, ''] });
+                  }}
+                  className="mt-1 text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5 py-1.5 px-3 rounded-xl hover:bg-emerald-50 transition-colors cursor-pointer border border-dashed border-emerald-300"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>+ إضافة تاريخ صلاحية آخر</span>
+                </button>
               </div>
 
               {/* Profit preview badge */}

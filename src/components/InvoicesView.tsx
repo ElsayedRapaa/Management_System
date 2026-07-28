@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { Invoice } from '../types';
 import { formatCurrency, formatDate } from '../lib/formatters';
 import {
@@ -21,6 +22,7 @@ interface InvoicesViewProps {
 
 export const InvoicesView: React.FC<InvoicesViewProps> = ({ onOpenCreateInvoice }) => {
   const { invoices, deleteInvoice, setViewInvoiceModal, setPrintInvoiceModal, totalSalesValue } = useApp();
+  const { user } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
@@ -151,13 +153,15 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({ onOpenCreateInvoice 
                         >
                           <Printer className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => setDeletingInvoice(inv)}
-                          title="حذف الفاتورة"
-                          className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {user?.role !== 'employee' && (
+                          <button
+                            onClick={() => setDeletingInvoice(inv)}
+                            title="حذف الفاتورة"
+                            className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { Customer, CustomerType } from '../types';
 import { generateCode } from '../lib/formatters';
 import {
@@ -19,6 +20,7 @@ import {
 
 export const CustomersView: React.FC = () => {
   const { customers, addCustomer, updateCustomer, deleteCustomer, invoices, setActiveTab } = useApp();
+  const { user } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
@@ -226,13 +228,15 @@ export const CustomersView: React.FC = () => {
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={() => setDeletingCustomer(customer)}
-                      title="حذف العميل"
-                      className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {user?.role !== 'employee' && (
+                      <button
+                        onClick={() => setDeletingCustomer(customer)}
+                        title="حذف العميل"
+                        className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

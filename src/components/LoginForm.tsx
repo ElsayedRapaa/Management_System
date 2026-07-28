@@ -25,12 +25,6 @@ export const LoginForm: React.FC = () => {
     }, 400);
   };
 
-  const fillDemoCredentials = () => {
-    setEmail('mahmoud@management.com');
-    setPassword('Mahmoud2026#');
-    setErrorMessage(null);
-  };
-
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden dir-rtl">
       {/* Background Subtle Gradient Blobs */}
@@ -70,7 +64,7 @@ export const LoginForm: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="mahmoud@management.com"
+                placeholder="example@domain.com"
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl pr-11 pl-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all dir-ltr text-right"
               />
             </div>
@@ -90,7 +84,7 @@ export const LoginForm: React.FC = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
+                placeholder="••••••••"
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl pr-11 pl-11 py-3 text-slate-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all dir-ltr text-right"
               />
               <button
@@ -132,28 +126,6 @@ export const LoginForm: React.FC = () => {
             )}
           </button>
         </form>
-
-        {/* Quick Demo Fill Helper */}
-        <div className="mt-8 pt-6 border-t border-slate-800/80 text-center">
-          <p className="text-xs text-slate-400 mb-3">بيانات الدخول المعتمدة للنظام:</p>
-          <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-xs space-y-1 text-slate-300 font-mono">
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500 font-sans text-right">البريد:</span>
-              <span className="text-emerald-400 dir-ltr">mahmoud@management.com</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500 font-sans text-right">الكلمة:</span>
-              <span className="text-emerald-400 dir-ltr">Mahmoud2026#</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={fillDemoCredentials}
-            className="mt-3 text-xs text-emerald-400 hover:text-emerald-300 hover:underline font-bold transition-colors cursor-pointer"
-          >
-            تعبئة بيانات الدخول تلقائياً
-          </button>
-        </div>
       </div>
     </div>
   );

@@ -65,7 +65,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onOpenCreateInvoic
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
               <span>نظام إدارة المخزن يعمل بكفاءة عالية</span>
             </div>
-            <h2 className="text-2xl lg:text-3xl font-black tracking-tight">مرحباً بك، محمود!</h2>
+            <h2 className="text-2xl lg:text-3xl font-black tracking-tight">مرحباً بك</h2>
             <p className="text-slate-300 text-sm max-w-2xl leading-relaxed">
               إليك النشرة الإحصائية المباشرة لإجمالي قيمة الأدوية والمستلزمات في المخزن، معدل حركة الفواتير، ونشاط المبيعات.
             </p>

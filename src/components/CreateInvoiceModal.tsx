@@ -179,33 +179,35 @@ export const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, 
 
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-4xl w-full my-auto p-6 sm:p-8 shadow-2xl border border-slate-200 animate-slide-in relative flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-3xl max-w-4xl w-full my-auto shadow-2xl border border-slate-200 animate-slide-in relative flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-emerald-50 text-emerald-700 rounded-2xl flex items-center justify-center border border-emerald-200">
-              <FileCheck2 className="w-6 h-6" />
+        <div className="p-6 sm:p-8 pb-4 border-b border-slate-100 shrink-0 bg-white z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 bg-emerald-50 text-emerald-700 rounded-2xl flex items-center justify-center border border-emerald-200">
+                <FileCheck2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-extrabold text-slate-900">إنشاء فاتورة صيدلانية جديدة</h3>
+                <p className="text-slate-500 text-xs mt-0.5">خصم الآلي للكميات المتاحة من المخزن فور الاعتماد</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl font-extrabold text-slate-900">إنشاء فاتورة صيدلانية جديدة</h3>
-              <p className="text-slate-500 text-xs mt-0.5">خصم الآلي للكميات المتاحة من المخزن فور الاعتماد</p>
-            </div>
+
+            <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-xl cursor-pointer">
+              <X className="w-6 h-6" />
+            </button>
           </div>
 
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-xl cursor-pointer">
-            <X className="w-6 h-6" />
-          </button>
+          {/* Error Alert */}
+          {errorMsg && (
+            <div className="mt-4 p-3.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-2xl flex items-center gap-2.5 shrink-0">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span className="font-bold">{errorMsg}</span>
+            </div>
+          )}
         </div>
 
-        {/* Error Alert */}
-        {errorMsg && (
-          <div className="mb-4 p-3.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-2xl flex items-center gap-2.5 shrink-0">
-            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-            <span className="font-bold">{errorMsg}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden space-y-6">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto p-4 sm:p-8 pb-20 space-y-6">
           {/* Customer Selection Row */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 shrink-0 space-y-3">
             <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -270,7 +272,7 @@ export const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, 
                         isOverStock ? 'bg-rose-50 border-rose-300' : 'bg-white border-slate-200'
                       }`}
                     >
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3 items-center text-xs">
                         {/* Select Product */}
                         <div className="md:col-span-5">
                           <label className="block text-[10px] text-slate-400 mb-1">المنتج</label>
@@ -281,7 +283,7 @@ export const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, 
                           >
                             {products.map((p) => (
                               <option key={p.id} value={p.id}>
-                                {p.name} ({p.code}) - {p.selling_price} ج.م - المتاح: {p.quantity}
+                                {p.name} ({p.code}) - {p.selling_price} ج.م - المتاح: {p.quantity}{p.expiry_dates && p.expiry_dates.length > 0 ? ` [صلاحية: ${p.expiry_dates.join('، ')}]` : ''}
                               </option>
                             ))}
                           </select>
@@ -341,7 +343,7 @@ export const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ isOpen, 
           </div>
 
           {/* Footer Summary & Submit */}
-          <div className="pt-4 border-t border-slate-100 shrink-0 space-y-4">
+          <div className="sticky bottom-0 bg-white border-t border-slate-200 p-4 z-10 shrink-0 space-y-4 shadow-lg rounded-b-3xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 text-white p-4 rounded-2xl shadow-inner">
               <div>
                 <span className="text-slate-400 text-xs block">إجمالي قيمة الفاتورة النهائي:</span>

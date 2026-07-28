@@ -8,6 +8,7 @@ import { DashboardView } from './components/DashboardView';
 import { ProductsView } from './components/ProductsView';
 import { CustomersView } from './components/CustomersView';
 import { InvoicesView } from './components/InvoicesView';
+import { UsersView } from './components/UsersView';
 import { ToastContainer } from './components/ToastContainer';
 import { CreateInvoiceModal } from './components/CreateInvoiceModal';
 import { InvoicePrintModal } from './components/InvoicePrintModal';
@@ -69,6 +70,7 @@ const AppContent: React.FC = () => {
           {activeTab === 'invoices' && (
             <InvoicesView onOpenCreateInvoice={() => setIsCreateInvoiceOpen(true)} />
           )}
+          {activeTab === 'users' && <UsersView />}
         </main>
       </div>
 

@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { Product, Customer, Invoice, CustomerType } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useAuth } from './AuthContext';
+import { notifyProductAdded, notifyInvoiceCreated } from '../lib/telegram';
 
-export type ActiveTab = 'dashboard' | 'products' | 'customers' | 'invoices';
+export type ActiveTab = 'dashboard' | 'products' | 'customers' | 'invoices' | 'users';
 
 export interface ToastMessage {
   id: string;
@@ -65,6 +67,12 @@ interface AppContextType {
   
   isLoadingData: boolean;
   refreshData: () => Promise<void>;
+  
+  // Users management synchronized with Supabase
+  users: any[];
+  addUser: (userData: { name: string; email: string; password: string; role: string }) => Promise<{ success: boolean; error?: string }>;
+  deleteUser: (idOrEmail: string) => Promise<{ success: boolean; error?: string }>;
+  updateUser: (idOrEmail: string, updateData: { name?: string; password?: string; role?: string; email?: string }) => Promise<{ success: boolean; error?: string }>;
 }
 
 const STORAGE_KEYS = {
@@ -90,6 +98,7 @@ const mapCustomerTypeFromDb = (type: string): CustomerType => {
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const auth = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -125,7 +134,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const { data: cData } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
         const { data: iData } = await supabase.from('invoices').select('*, invoice_items(*)').order('created_at', { ascending: false });
 
-        if (pData) setProducts(pData);
+        if (pData) {
+          const formattedProducts: Product[] = pData.map((p: any) => ({
+            ...p,
+            expiry_dates: Array.isArray(p.expiry_dates)
+              ? p.expiry_dates.filter((d: any) => d && typeof d === 'string' && d.trim() !== '')
+              : p.expiry_dates && typeof p.expiry_dates === 'string' && p.expiry_dates.trim() !== ''
+              ? [p.expiry_dates.trim()]
+              : [],
+          }));
+          setProducts(formattedProducts);
+        }
         else setProducts(loadLocal(STORAGE_KEYS.PRODUCTS, []));
 
         if (cData) {
@@ -233,8 +252,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Add Product
   const addProduct = async (productData: Omit<Product, 'id' | 'created_at'>): Promise<boolean> => {
+    const cleanExpiryDates = (productData.expiry_dates || []).filter((d) => d && d.trim() !== '');
     let newProduct: Product = {
       ...productData,
+      expiry_dates: cleanExpiryDates,
       id: 'prod-' + Date.now(),
       created_at: new Date().toISOString(),
     };
@@ -250,6 +271,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               purchase_price: Number(productData.purchase_price),
               selling_price: Number(productData.selling_price),
               quantity: Number(productData.quantity),
+              expiry_dates: cleanExpiryDates,
             },
           ])
           .select();
@@ -259,6 +281,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } else if (data && data[0]) {
           newProduct = {
             ...productData,
+            expiry_dates: Array.isArray(data[0].expiry_dates) ? data[0].expiry_dates : cleanExpiryDates,
             id: data[0].id,
             created_at: data[0].created_at || newProduct.created_at,
           };
@@ -266,30 +289,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       saveLocalProducts([newProduct, ...products]);
       showToast('success', 'تمت الإضافة بنجاح', `تم إضافة المنتج "${newProduct.name}" إلى المخزن.`);
+      notifyProductAdded(newProduct).catch((err) => console.error('Telegram product notify error:', err));
       return true;
     } catch (error) {
       console.error('Add product error:', error);
       saveLocalProducts([newProduct, ...products]);
       showToast('success', 'تمت الإضافة بنجاح', `تم إضافة المنتج "${newProduct.name}" (محلياً).`);
+      notifyProductAdded(newProduct).catch((err) => console.error('Telegram product notify error:', err));
       return true;
     }
   };
 
   // Update Product
   const updateProduct = async (id: string, productData: Partial<Product>): Promise<boolean> => {
+    const cleanExpiryDates = productData.expiry_dates
+      ? productData.expiry_dates.filter((d) => d && d.trim() !== '')
+      : undefined;
+    const finalProductData = {
+      ...productData,
+      ...(cleanExpiryDates !== undefined ? { expiry_dates: cleanExpiryDates } : {}),
+    };
+
     try {
       if (isSupabaseConfigured && !id.startsWith('prod-')) {
-        const { id: _id, created_at: _c, ...updatePayload } = productData as any;
+        const { id: _id, created_at: _c, ...updatePayload } = finalProductData as any;
         const { error } = await supabase.from('products').update(updatePayload).eq('id', id);
         if (error) console.error('Supabase update product error:', error);
       }
-      const updated = products.map((p) => (p.id === id ? { ...p, ...productData } : p));
+      const updated = products.map((p) => (p.id === id ? { ...p, ...finalProductData } : p));
       saveLocalProducts(updated);
       showToast('success', 'تم التحديث بنجاح', 'تم تحديث بيانات المنتج بنجاح.');
       return true;
     } catch (error) {
       console.error(error);
-      const updated = products.map((p) => (p.id === id ? { ...p, ...productData } : p));
+      const updated = products.map((p) => (p.id === id ? { ...p, ...finalProductData } : p));
       saveLocalProducts(updated);
       showToast('success', 'تم التحديث بنجاح', 'تم تحديث البيانات.');
       return true;
@@ -540,6 +573,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     showToast('success', 'تم إنشاء الفاتورة بنجاح!', `فاتورة رقم ${newInvoice.code} بمبلغ ${total_amount.toLocaleString('ar-EG')} ج.م`);
+    notifyInvoiceCreated(newInvoice).catch((err) => console.error('Telegram invoice notify error:', err));
     
     return newInvoice;
   };
@@ -611,6 +645,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setPrintInvoiceModal,
         isLoadingData,
         refreshData: loadInitialData,
+        users: auth.users,
+        addUser: auth.addUser,
+        deleteUser: auth.deleteUser,
+        updateUser: auth.updateUser,
       }}
     >
       {children}

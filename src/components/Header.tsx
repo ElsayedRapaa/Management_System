@@ -1,14 +1,42 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Menu, Plus, Calendar, RefreshCw, FileText, Boxes, Users, LayoutDashboard } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Menu, Plus, Calendar, RefreshCw, FileText, Boxes, Users, LayoutDashboard, ShieldCheck, ShieldAlert } from 'lucide-react';
 
 interface HeaderProps {
   onOpenMobileMenu: () => void;
   onOpenCreateInvoice: () => void;
 }
 
+const ROLE_CONFIG: Record<string, { label: string; badgeClass: string; icon: any }> = {
+  super_admin: {
+    label: 'المدير العام',
+    badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    icon: ShieldCheck,
+  },
+  manager: {
+    label: 'شريك / مسئول',
+    badgeClass: 'bg-sky-100 text-sky-800 border-sky-300',
+    icon: ShieldCheck,
+  },
+  employee: {
+    label: 'موظف مبيعات',
+    badgeClass: 'bg-amber-100 text-amber-800 border-amber-300',
+    icon: ShieldAlert,
+  },
+};
+
 export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu, onOpenCreateInvoice }) => {
   const { activeTab, refreshData, isLoadingData } = useApp();
+  const { user: currentUser } = useAuth();
+
+  const currentRole = currentUser?.role || 'employee';
+  const roleInfo = ROLE_CONFIG[currentRole] || {
+    label: 'مستخدم',
+    badgeClass: 'bg-slate-100 text-slate-800 border-slate-200',
+    icon: ShieldAlert,
+  };
+  const RoleIcon = roleInfo.icon;
 
   const getTabTitle = () => {
     switch (activeTab) {
@@ -36,10 +64,26 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu, onOpenCreateIn
           sub: 'عرض الفواتير مرتبة من الأحدث إلى الأقدم وإنشاء فواتير طبية جديدة',
           icon: <FileText className="w-6 h-6 text-emerald-600" />,
         };
+      case 'users':
+        return {
+          title: 'إدارة المستخدمين والصلاحيات',
+          sub: 'إضافة وإدارة حسابات طاقم العمل وتحديد صلاحياتهم في النظام',
+          icon: <ShieldCheck className="w-6 h-6 text-emerald-600" />,
+        };
+      default:
+        return {
+          title: 'لوحة التحكم',
+          sub: 'نظام إدارة المخازن والفواتير الطبية',
+          icon: <LayoutDashboard className="w-6 h-6 text-emerald-600" />,
+        };
     }
   };
 
-  const currentTab = getTabTitle();
+  const currentTab = getTabTitle() || {
+    title: 'لوحة التحكم',
+    sub: 'نظام إدارة المخازن',
+    icon: <LayoutDashboard className="w-6 h-6 text-emerald-600" />,
+  };
 
   const todayArabic = new Intl.DateTimeFormat('ar-EG', {
     weekday: 'long',

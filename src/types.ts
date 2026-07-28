@@ -1,9 +1,12 @@
 export type CustomerType = 'صيدلية' | 'مستشفى' | 'عميل';
 
 export interface User {
+  id?: string;
   email: string;
   name: string;
-  role: string;
+  role: 'super_admin' | 'manager' | 'employee' | string;
+  password?: string;
+  created_at?: string;
 }
 
 export interface Product {
@@ -14,6 +17,7 @@ export interface Product {
   selling_price: number;  // سعر البيع
   quantity: number;       // الكمية المتاحة
   category?: string;
+  expiry_dates?: string[];
   created_at: string;
   updated_at?: string;
 }

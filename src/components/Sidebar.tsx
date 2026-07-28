@@ -23,6 +23,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen, onO
   const { activeTab, setActiveTab, bankTotalValue, products, invoices } = useApp();
   const { user, logout } = useAuth();
 
+  const isSuperAdmin = user?.email?.toLowerCase() === 'mahmoud@management.com' || user?.role === 'super_admin';
+
   const navItems: { id: ActiveTab; label: string; icon: React.ReactNode; badge?: string | number }[] = [
     {
       id: 'dashboard',
@@ -46,11 +48,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen, onO
       icon: <FileText className="w-5 h-5" />,
       badge: invoices.length,
     },
+    ...(isSuperAdmin
+      ? [
+          {
+            id: 'users' as ActiveTab,
+            label: 'إدارة المستخدمين',
+            icon: <ShieldCheck className="w-5 h-5 text-emerald-400" />,
+          },
+        ]
+      : []),
   ];
 
   const handleNavClick = (tab: ActiveTab) => {
     setActiveTab(tab);
     setMobileOpen(false);
+  };
+
+  const getRoleBadgeLabel = (role?: string) => {
+    if (role === 'super_admin') return 'المدير العام';
+    if (role === 'manager') return 'مسؤول / شريك';
+    return 'موظف مبيعات';
   };
 
   return (
@@ -77,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen, onO
             </div>
             <div>
               <h2 className="font-extrabold text-white text-base tracking-tight leading-snug">نظام المخازن</h2>
-              <p className="text-slate-400 text-xs font-medium">لوحة تحكّم محمود 2026</p>
+              <p className="text-slate-400 text-xs font-medium">لوحة تحكّم إدارة المخزن</p>
             </div>
           </div>
 
@@ -148,14 +165,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen, onO
           <div className="flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-slate-800/60">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-emerald-950 border border-emerald-700/50 flex items-center justify-center text-emerald-400 font-bold text-sm">
-                م
+                {user?.name ? user.name.charAt(0) : 'م'}
               </div>
               <div>
                 <div className="text-xs font-bold text-white flex items-center gap-1">
-                  <span>{user?.name || 'محمود - المدير العام'}</span>
+                  <span>{user?.name || 'مستخدم النظام'}</span>
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 </div>
-                <div className="text-[10px] text-slate-400 dir-ltr text-right">{user?.email || 'mahmoud@management.com'}</div>
+                <div className="text-[10px] text-emerald-400 font-semibold">
+                  {getRoleBadgeLabel(user?.role)}
+                </div>
               </div>
             </div>
 
