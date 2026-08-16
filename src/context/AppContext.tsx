@@ -371,10 +371,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .select();
 
         if (error) {
-          console.error('❌ Error adding customer:', error.message);
-          alert('خطأ في إضافة العميل: ' + error.message);
-          showToast('error', 'خطأ في إضافة العميل', error.message);
-          return false;
+          console.error('Supabase customer insert error:', error.message);
+          // Fallback to local storage
+          saveLocalCustomers([newCustomer, ...customers]);
+          showToast('success', 'تم إضافة العميل', `تم إضافة العميل "${newCustomer.name}" (محلياً).`);
+          return true;
         } else if (data && data[0]) {
           newCustomer = {
             id: data[0].id,
@@ -390,11 +391,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       saveLocalCustomers([newCustomer, ...customers]);
       showToast('success', 'تم إضافة العميل', `تم إضافة العميل "${newCustomer.name}" بنجاح.`);
       return true;
-    } catch (error: any) {
-      console.error('Add customer error:', error);
-      alert('خطأ في إضافة العميل: ' + (error?.message || 'خطأ في الاتصال بقاعدة البيانات'));
-      showToast('error', 'خطأ في إضافة العميل', error?.message || 'خطأ في الاتصال بقاعدة البيانات');
-      return false;
+    } catch (err: any) {
+      console.error('Network/Database error adding customer:', err);
+      // Fallback: If network fails (e.g. Failed to fetch), save locally to prevent blocking the user UI
+      saveLocalCustomers([newCustomer, ...customers]);
+      showToast('warning', 'حفظ محلي', 'تعذر الاتصال بالخادم، تم حفظ العميل محلياً بنجاح.');
+      return true;
     }
   };
 
@@ -408,8 +410,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         const { error } = await supabase.from('customers').update(updatePayload).eq('id', id);
         if (error) {
-          console.error('❌ Error updating customer:', error.message);
-          alert('خطأ في تعديل العميل: ' + error.message);
+          console.error('Supabase customer update error:', error.message);
         }
       }
       const updated = customers.map((c) => (c.id === id ? { ...c, ...customerData } : c));
@@ -420,7 +421,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.error('Update customer error:', error);
       const updated = customers.map((c) => (c.id === id ? { ...c, ...customerData } : c));
       saveLocalCustomers(updated);
-      showToast('success', 'تم التحديث', 'تم التعديل.');
+      showToast('success', 'تم التحديث', 'تم تعديل بيانات العميل محلياً.');
       return true;
     }
   };
@@ -429,16 +430,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteCustomer = async (id: string): Promise<boolean> => {
     try {
       if (isSupabaseConfigured && !id.startsWith('cust-')) {
-        await supabase.from('customers').delete().eq('id', id);
+        const { error } = await supabase.from('customers').delete().eq('id', id);
+        if (error) {
+          console.error('Supabase customer delete error:', error.message);
+        }
       }
       const updated = customers.filter((c) => c.id !== id);
       saveLocalCustomers(updated);
       showToast('warning', 'تم الحذف', 'تم حذف بيانات العميل.');
       return true;
-    } catch {
+    } catch (error) {
+      console.error('Delete customer error:', error);
       const updated = customers.filter((c) => c.id !== id);
       saveLocalCustomers(updated);
-      showToast('warning', 'تم الحذف', 'تم حذف البيانات.');
+      showToast('warning', 'تم الحذف', 'تم حذف بيانات العميل محلياً.');
       return true;
     }
   };

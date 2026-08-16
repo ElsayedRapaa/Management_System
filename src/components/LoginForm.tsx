@@ -4,6 +4,7 @@ import { Lock, Mail, ShieldAlert, CheckCircle2, PackageCheck, Eye, EyeOff } from
 
 export const LoginForm: React.FC = () => {
   const { login } = useAuth();
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
@@ -50,6 +51,26 @@ export const LoginForm: React.FC = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Name Field */}
+          <div>
+            <label className="block text-xs font-bold text-slate-300 mb-2">
+              اسم المستخدم
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-500">
+                <Mail className="w-5 h-5" />
+              </div>
+              <input
+                type="name"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Jhon Doe"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pr-11 pl-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all dir-ltr text-right"
+              />
+            </div>
+          </div>
+          
           {/* Email Field */}
           <div>
             <label className="block text-xs font-bold text-slate-300 mb-2">
